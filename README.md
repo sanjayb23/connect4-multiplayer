@@ -2,8 +2,7 @@
 
 Real-time multiplayer Connect4 platform featuring ranked matchmaking, AI opponents, spectator mode, and WebSocket-powered gameplay.
 
-
-**[Play Now →](https://connect4.iamasit07.me)** · **[Developer Guide](./DEVELOPER.md)** · **[Backend Deep Dive](./BACKEND_LOGIC.md)**
+[Developer Guide](./DEVELOPER.md) · [Backend Deep Dive](./BACKEND_LOGIC.md)
 
 ---
 
@@ -132,8 +131,8 @@ connect4/
 ### Option 1: Docker (Recommended)
 
 ```bash
-git clone https://github.com/iamasit07/connect4.git
-cd connect4
+git clone https://github.com/sanjayb23/connect4-multiplayer.git
+cd connect4-multiplayer
 
 # Copy and configure environment variables
 cp .env.example .env  # Edit with your database URL, JWT secret, etc.
