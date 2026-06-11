@@ -1,0 +1,354 @@
+import { create } from "zustand";
+import { BOARD_ROWS, BOARD_COLS, TURN_TIME_LIMIT } from "@/lib/config";
+import type {
+  Board,
+  PlayerNumber,
+  GameMode,
+  BotDifficulty,
+  CellValue,
+} from "../types";
+
+const createEmptyBoard = (): Board => {
+  return Array(BOARD_ROWS)
+    .fill(null)
+    .map(() => Array(BOARD_COLS).fill(0) as CellValue[]);
+};
+
+type GameStatus = "idle" | "queuing" | "playing" | "finished";
+type ConnectionStatus = "disconnected" | "connecting" | "connected" | "error";
+type RematchStatus = "idle" | "sent" | "received" | "accepted" | "declined";
+
+interface GameStore {
+  // Connection state
+  connectionStatus: ConnectionStatus;
+  connectionError: string | null;
+  shouldConnect: boolean;
+
+  // Game state
+  gameId: string | null;
+  board: Board;
+  currentTurn: PlayerNumber;
+  myPlayer: PlayerNumber | null;
+  opponent: string | null;
+  gameStatus: GameStatus;
+  winner: string | null;
+  winReason: string | null;
+  winningCells: { row: number; col: number }[] | null;
+  lastMove: { column: number; row: number; player: number } | null;
+  gameMode: GameMode | null;
+  botDifficulty: BotDifficulty | null;
+
+  // Timer state
+  turnTimeLimit: number;
+  timeLeft: number;
+
+  // Spectator state
+  isSpectator: boolean;
+  spectatorCount: number;
+  spectatorPlayer1: string | null;
+  spectatorPlayer2: string | null;
+
+  // Disconnection state
+  isOpponentDisconnected: boolean;
+  disconnectTimer: number;
+
+  // Rematch state
+  rematchStatus: RematchStatus;
+  allowRematch: boolean;
+
+  // Connection actions
+  setConnectionStatus: (status: ConnectionStatus, error?: string) => void;
+  setShouldConnect: (shouldConnect: boolean) => void;
+
+  // Game actions
+  setQueuing: (mode: GameMode, difficulty?: BotDifficulty) => void;
+  initGame: (data: {
+    gameId: string;
+    board: Board;
+    currentTurn: PlayerNumber;
+    myPlayer: PlayerNumber;
+    opponent: string;
+    turnTimeLimit?: number;
+    disconnectTimeout?: number;
+  }) => void;
+  updateGameState: (data: {
+    board: Board;
+    currentTurn: PlayerNumber;
+    lastMove?: { column: number; row: number; player: number };
+    timeLeft?: number;
+  }) => void;
+  setOpponentDisconnected: (disconnected: boolean, timeLeft?: number) => void;
+  endGame: (data: {
+    winner: string;
+    reason: string;
+    winningCells?: { row: number; col: number }[];
+    board?: CellValue[][];
+    allowRematch?: boolean;
+  }) => void;
+  resetGame: () => void;
+
+  // Timer actions
+  setTimeLeft: (time: number) => void;
+
+  // Spectator actions
+  setSpectatorMode: (isSpectator: boolean) => void;
+  setSpectatorCount: (count: number) => void;
+  initSpectatorGame: (data: {
+    gameId: string;
+    board: Board;
+    currentTurn: PlayerNumber;
+    player1: string;
+    player2: string;
+  }) => void;
+
+  // Rematch actions
+  setRematchStatus: (status: RematchStatus) => void;
+  setAllowRematch: (allow: boolean) => void;
+
+  // Helpers
+  loadFinishedGame: (data: {
+    gameId: string;
+    board: Board;
+    player1: { username: string; id: number };
+    player2: { username: string; id: number | null };
+    winner: string | null;
+    reason: string;
+    myUserId: number;
+    winningCells?: { row: number; col: number }[];
+  }) => void;
+  isActiveGamePopupDismissed: boolean;
+  dismissActiveGamePopup: () => void;
+
+  isMyTurn: () => boolean;
+  getMyColor: () => "red" | "yellow" | null;
+  canDropInColumn: (col: number) => boolean;
+}
+
+export const useGameStore = create<GameStore>((set, get) => ({
+  // Connection state
+  connectionStatus: "disconnected",
+  connectionError: null,
+  shouldConnect: false,
+
+  // Game state
+  gameId: null,
+  board: createEmptyBoard(),
+  currentTurn: 1,
+  myPlayer: null,
+  opponent: null,
+  gameStatus: "idle",
+  winner: null,
+  winReason: null,
+  winningCells: null,
+  lastMove: null,
+  gameMode: null,
+  botDifficulty: null,
+
+  // Disconnection state
+  isOpponentDisconnected: false,
+  disconnectTimer: 0,
+
+  // Timer state
+  turnTimeLimit: TURN_TIME_LIMIT,
+  timeLeft: TURN_TIME_LIMIT,
+
+  // Spectator state
+  isSpectator: false,
+  spectatorCount: 0,
+  spectatorPlayer1: null,
+  spectatorPlayer2: null,
+
+  // Rematch state
+  rematchStatus: "idle",
+  allowRematch: true,
+
+  setConnectionStatus: (connectionStatus, error) =>
+    set({
+      connectionStatus,
+      connectionError: error || null,
+    }),
+
+  setShouldConnect: (shouldConnect) => set({ shouldConnect }),
+
+  setQueuing: (mode, difficulty) =>
+    set({
+      gameStatus: "queuing",
+      gameMode: mode,
+      botDifficulty: difficulty || null,
+      board: createEmptyBoard(),
+      winner: null,
+      winReason: null,
+      winningCells: null,
+      rematchStatus: "idle",
+      isOpponentDisconnected: false,
+      disconnectTimer: 0,
+    }),
+
+  initGame: ({
+    gameId,
+    board,
+    currentTurn,
+    myPlayer,
+    opponent,
+    turnTimeLimit,
+    disconnectTimeout,
+  }: {
+    gameId: string;
+    board: Board;
+    currentTurn: PlayerNumber;
+    myPlayer: PlayerNumber;
+    opponent: string;
+    turnTimeLimit?: number;
+    disconnectTimeout?: number;
+  }) =>
+    set({
+      gameId,
+      board,
+      currentTurn,
+      myPlayer,
+      opponent,
+      gameStatus: "playing",
+      winner: null,
+      winReason: null,
+      winningCells: null,
+      lastMove: null,
+      turnTimeLimit: turnTimeLimit || TURN_TIME_LIMIT,
+      timeLeft: turnTimeLimit || TURN_TIME_LIMIT,
+      isSpectator: false,
+      spectatorPlayer1: null,
+      spectatorPlayer2: null,
+      rematchStatus: "idle",
+      isOpponentDisconnected: (disconnectTimeout !== undefined && disconnectTimeout > 0),
+      disconnectTimer: disconnectTimeout || 0,
+    }),
+
+  updateGameState: ({ board, currentTurn, lastMove, timeLeft }) =>
+    set((state) => ({
+      board,
+      currentTurn,
+      lastMove: lastMove || state.lastMove,
+      timeLeft: timeLeft !== undefined ? timeLeft : state.turnTimeLimit,
+    })),
+
+  setOpponentDisconnected: (disconnected, timeLeft) =>
+    set({
+      isOpponentDisconnected: disconnected,
+      disconnectTimer: timeLeft || 0,
+    }),
+
+  endGame: ({ winner, reason, winningCells, board, allowRematch }) =>
+    set((state) => ({
+      gameStatus: "finished",
+      winner,
+      winReason: reason,
+      winningCells: winningCells || null,
+      board: board || state.board,
+      allowRematch: allowRematch !== undefined ? allowRematch : true,
+      isOpponentDisconnected: false,
+      disconnectTimer: 0,
+    })),
+
+  resetGame: () =>
+    set({
+      connectionStatus: "disconnected",
+      connectionError: null,
+      shouldConnect: false,
+      gameId: null,
+      board: createEmptyBoard(),
+      currentTurn: 1,
+      myPlayer: null,
+      opponent: null,
+      gameStatus: "idle",
+      winner: null,
+      winReason: null,
+      winningCells: null,
+      lastMove: null,
+      gameMode: null,
+      botDifficulty: null,
+      timeLeft: TURN_TIME_LIMIT,
+      isSpectator: false,
+      spectatorCount: 0,
+      spectatorPlayer1: null,
+      spectatorPlayer2: null,
+      rematchStatus: "idle",
+      allowRematch: true,
+      isOpponentDisconnected: false,
+      disconnectTimer: 0,
+    }),
+
+  setTimeLeft: (time) => set({ timeLeft: time }),
+
+  setSpectatorMode: (isSpectator) => set({ isSpectator }),
+
+  setSpectatorCount: (count) => set({ spectatorCount: count }),
+
+  initSpectatorGame: ({ gameId, board, currentTurn, player1, player2 }) =>
+    set({
+      gameId,
+      board,
+      currentTurn,
+      myPlayer: 1, // spectators view from Player 1's perspective
+      opponent: player2,
+      gameStatus: "playing",
+      winner: null,
+      winReason: null,
+      winningCells: null,
+      lastMove: null,
+      isSpectator: true,
+      spectatorPlayer1: player1,
+      spectatorPlayer2: player2,
+      gameMode: "pvp",
+      rematchStatus: "idle",
+      allowRematch: false,
+      isOpponentDisconnected: false,
+      disconnectTimer: 0,
+    }),
+
+  setRematchStatus: (status) => set({ rematchStatus: status }),
+
+  loadFinishedGame: ({
+    gameId,
+    board,
+    player1,
+    player2,
+    winner,
+    reason,
+    myUserId,
+    winningCells,
+  }) =>
+    set({
+      gameId,
+      board,
+      gameStatus: "finished",
+      myPlayer: myUserId === player1.id ? 1 : player2.id && myUserId === player2.id ? 2 : null,
+      opponent: myUserId === player1.id ? (player2.username || "Bot") : player1.username,
+      winner,
+      winReason: reason,
+      winningCells: winningCells || null,
+      isSpectator: myUserId !== player1.id && (!player2.id || myUserId !== player2.id),
+      isOpponentDisconnected: false,
+      disconnectTimer: 0,
+    }),
+
+  setAllowRematch: (allow) => set({ allowRematch: allow }),
+
+  isActiveGamePopupDismissed: false,
+  dismissActiveGamePopup: () => set({ isActiveGamePopupDismissed: true }),
+
+  isMyTurn: () => {
+    const { myPlayer, currentTurn, gameStatus, isSpectator } = get();
+    return gameStatus === "playing" && myPlayer === currentTurn && !isSpectator;
+  },
+
+  getMyColor: () => {
+    const { myPlayer } = get();
+    if (!myPlayer) return null;
+    return myPlayer === 1 ? "red" : "yellow";
+  },
+
+  canDropInColumn: (col) => {
+    const { board, gameStatus, isSpectator } = get();
+    if (gameStatus !== "playing" || isSpectator) return false;
+    return board[0][col] === 0;
+  },
+}));
