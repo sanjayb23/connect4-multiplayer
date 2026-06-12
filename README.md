@@ -13,56 +13,39 @@ A full-stack Connect 4 game where two players drop discs into a 7×6 grid, racin
 
 ## Resume Highlights
 
-* Engineered a real-time multiplayer Connect4 platform using Go, React, and WebSockets.
-
+* Engineered a real-time multiplayer Connect4 platform using Go, React, and WebSockets
 * Implemented Elo-based matchmaking and ranking for competitive gameplay.
-
 * Developed AI opponents using Minimax with Alpha-Beta Pruning.
-
 * Integrated JWT and Google OAuth authentication.
-
 * Built spectator mode, rematch system, and automatic reconnection recovery.
 
 ## Screenshots
 
 ### Landing Screen
-
 ![Landing](assets/Landing.png)
 
 ### Dashboard
-
 ![Dashboard](assets/dashboard.png)
 
 ### Lobby
-
 ![Lobby](assets/lobby.png)
 
 ### Gameplay
-
 ![Gameplay](assets/game.png)
 
 ### Leaderboard
-
 ![Leaderboard](assets/leaderboard.png)
 
 ## Features
 
 - **Real-time PvP** — Automatic opponent pairing via WebSocket with Elo-ranked matchmaking
-
 - **AI Opponents** — Easy (random + blocking), Medium (threat evaluation), Hard (depth-7 minimax with alpha-beta pruning)
-
 - **Rematch System** — Request/accept rematches with 10-second countdown
-
 - **Authentication** — Email/password or Google OAuth with JWT-based stateless sessions
-
 - **Competitive Ranking** — Elo-based leaderboard updated after every match
-
 - **Game History** — Browse past matches with results, move counts, and timestamps
-
 - **Player Profiles** — View rating, win/loss/draw stats, and avatar
-
 - **Responsive Design** — Fully playable on mobile, tablet, and desktop
-
 - **Dark/Light/System Theme** — Automatic detection with manual toggle
 
 ## Tech Stack
@@ -70,55 +53,31 @@ A full-stack Connect 4 game where two players drop discs into a 7×6 grid, racin
 ### Backend
 
 | Component   | Technology                      | Purpose                                       |
-
-| ----------- | ------------------------------- | --------------------------------------------- |
-
 | Language    | **Go 1.24**                     | High-concurrency game server                  |
-
 | WebSocket   | **Gorilla WebSocket**           | Real-time bidirectional communication         |
-
 | Database    | **PostgreSQL** (Supabase)       | Persistent storage for users, games, sessions |
-
 | Cache       | **Redis**                       | Session caching and fast lookups              |
-
 | Auth        | **JWT + bcrypt + Google OAuth** | Stateless authentication with OAuth2 support  |
-
 | Concurrency | **Goroutines + Channels**       | Lightweight concurrent game sessions          |
 
 ### Frontend
 
 | Component     | Technology                           | Purpose                                 |
-
-| ------------- | ------------------------------------ | --------------------------------------- |
-
 | Framework     | **React 19** + **TypeScript**        | Type-safe UI components                 |
-
 | Styling       | **Tailwind CSS 4** + **shadcn/ui**   | Responsive design system                |
-
 | State         | **Zustand**                          | Lightweight global state management     |
-
 | Animation     | **Framer Motion**                    | Smooth transitions and game animations  |
-
 | Data Fetching | **TanStack React Query** + **Axios** | Server state management and HTTP client |
-
 | Bundler       | **Vite**                             | Fast development and optimized builds   |
 
 ### Infrastructure
 
 | Component        | Technology                      | Purpose                                            |
-
-| ---------------- | ------------------------------- | -------------------------------------------------- |
-
 | Hosting          | **Render**                      | Monolith deployment (Go serves static React build) |
-
-| Database         | **Supabase PostgreSQL**         | Managed Postgres with connection pooling            |
-
+| Database         | **Supabase PostgreSQL**         | Managed Postgres with connection pooling           |
 | Containerization | **Docker** + **Docker Compose** | Local dev and production builds                    |
 
 ## Project Structure
-
-```
-
 connect4/
 
 ├── backend/
@@ -191,50 +150,37 @@ connect4/
 
 └── render.yaml                   # Render deployment config
 
-```
 
 ## Getting Started
-
 ### Prerequisites
 
 - **Go** 1.24+ — [Download](https://golang.org/dl/)
-
 - **Node.js** 18+ — [Download](https://nodejs.org/)
-
 - **PostgreSQL** 14+ — [Download](https://www.postgresql.org/download/)
-
 - **Redis** (optional) — [Download](https://redis.io/download/)
 
 ### Option 1: Docker (Recommended)
 
-```bash
 
 git clone https://github.com/sanjayb23/connect4-multiplayer.git
-
 cd connect4-multiplayer
 
 # Copy and configure environment variables
-
 cp .env.example .env  # Edit with your database URL, JWT secret, etc.
 
 # Start development environment (with hot reload)
-
 docker compose up
 
 # Or production build
-
 docker compose -f docker-compose.prod.yml up
 
-```
+
 
 ### Option 2: Manual Setup
 
 **Backend:**
-
 ```bash
-
 cd backend
-
 go mod download
 
 # Create .env in project root
@@ -292,37 +238,21 @@ npm run dev
 ### Backend
 
 | Variable               | Description                   | Required |
-
-| ---------------------- | ----------------------------- | -------- |
-
 | `DATABASE_URI`         | PostgreSQL connection string  | ✅       |
-
 | `JWT_SECRET`           | Secret for signing JWT tokens | ✅       |
-
 | `PORT`                 | Server port (default: `8080`) | ❌       |
-
 | `REDIS_URL`            | Redis connection URL          | ❌       |
-
 | `FRONTEND_URL`         | Frontend origin for cookies   | ❌       |
-
 | `ALLOWED_ORIGINS`      | CORS allowed origins          | ❌       |
-
 | `GOOGLE_CLIENT_ID`     | Google OAuth client ID        | ❌       |
-
 | `GOOGLE_CLIENT_SECRET` | Google OAuth secret           | ❌       |
-
 | `GOOGLE_REDIRECT_URL`  | OAuth callback URL            | ❌       |
 
 ### Frontend
 
 | Variable           | Description           | Required |
-
-| ------------------ | --------------------- | -------- |
-
 | `VITE_BACKEND_URL` | Backend HTTP base URL | ❌       |
-
 | `VITE_WS_URL`      | Backend WebSocket URL | ❌       |
-
 ---
 
 ## How It Works
@@ -330,33 +260,20 @@ npm run dev
 ### Game Flow
 
 1. Player signs up / logs in (JWT issued, stored in httpOnly cookie)
-
 2. Player clicks "Play Online" or "Play vs Bot"
-
 3. WebSocket connection established → JWT sent for auth
-
 4. Matchmaking:
-
   - PvP: Queued until opponent found (10s timeout → auto bot match)
-
   - Bot: Immediate game start with selected difficulty
-
 5. Players take turns dropping discs (validated server-side)
-
 6. Game ends → winner determined → ratings updated → stats saved
-
 7. Rematch available (PvP: request/accept overlay; Bot: instant replay)
 
 ### Bot AI
 
 | Difficulty | Strategy                                             | Depth |
-
-| ---------- | ---------------------------------------------------- | ----- |
-
 | **Easy**   | Random valid moves with basic win/block detection    | 1     |
-
 | **Medium** | Threat evaluation + positional scoring               | 3     |
-
 | **Hard**   | Minimax with alpha-beta pruning + positional weights | 7     |
 
 ### WebSocket Protocol
@@ -366,33 +283,22 @@ npm run dev
 ```json
 
 {"type": "init", "jwt": "..."}
-
 {"type": "find_match", "difficulty": ""}          // PvP
-
 {"type": "find_match", "difficulty": "hard"}      // Bot
-
 {"type": "make_move", "column": 3}
-
 {"type": "abandon_game"}
-
 {"type": "request_rematch"}
-
 {"type": "rematch_response", "rematchResponse": "accept"}
 
 ```
 
 **Server → Client:**
-
 ```json
 
 {"type": "game_start", "gameId": "...", "opponent": "Player2", "yourPlayer": 1}
-
 {"type": "move_made", "column": 3, "row": 5, "player": 1, "board": [...], "nextTurn": 2}
-
 {"type": "game_over", "winner": "Player1", "reason": "connect4", "allowRematch": true}
-
 {"type": "rematch_request", "rematchRequester": "Player2", "rematchTimeout": 10}
-
 {"type": "error", "message": "Not your turn"}
 
 ```
@@ -402,9 +308,7 @@ npm run dev
 ```sql
 
 players         — id, username, email, google_id, password_hash, rating, games_played/won/drawn
-
 game            — game_id, player1/2_id, winner, reason, total_moves, duration, board_state (JSONB)
-
 user_sessions   — session_id, user_id, device_info, ip_address, is_active (single-device enforced)
 
 ```
