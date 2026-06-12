@@ -2,7 +2,7 @@
 
 > Real-time multiplayer Connect 4 with ranked matchmaking, AI bots, and WebSocket gameplay.
 
-**[Play Now](https://connect4-game.onrender.com)** · **[Developer Guide](./DEVELOPER.md)** · **[Backend Deep Dive](./BACKEND_LOGIC.md)**
+· **[Developer Guide](./DEVELOPER.md)** · **[Backend Deep Dive](./BACKEND_LOGIC.md)**
 
 ---
 
